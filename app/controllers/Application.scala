@@ -10,6 +10,7 @@ import slick.driver.PostgresDriver
 import play.api.db.slick.DatabaseConfigProvider
 import play.api.libs.concurrent.Execution.Implicits.defaultContext
 import play.api.Play
+import play.api.Logger
 
 
 class Application extends Controller {
@@ -26,5 +27,45 @@ class Application extends Controller {
           Ok(Json.obj("result"-> egg))
       }
     )
+  }
+
+  def create = Action.async { implicit request =>
+  
+    Logger.debug(request.body.asJson.toString)
+
+    val dataWrapped:Option[(String, String)] = for {
+      jsonBody <- request.body.asJson
+      classRank <- (jsonBody \ "classRank").asOpt[String]
+      name <- (jsonBody \ "name").asOpt[String]
+    } yield (classRank,name)
+
+
+    dataWrapped match {
+      case None => scala.concurrent.Future { Ok("Nope") }
+      case Some(data) => db.run(heroes+=data)
+                                .map(head => Ok(head.toString))
+    }
+
+  }
+
+
+  def delete(classRank: String) = Action.async { implicit request =>
+      db.run(heroes.filter(_.classRank === classRank).delete)
+                             .map(head => Ok(head.toString))
+  }
+
+  def update = Action.async { implicit request =>
+     val dataWrapped:Option[(String, String)] = for {
+      jsonBody <- request.body.asJson
+      classRank <- (jsonBody \ "classRank").asOpt[String]
+      name <- (jsonBody \ "name").asOpt[String]
+    } yield (classRank,name)
+
+    dataWrapped match {
+      case None => scala.concurrent.Future { Ok("Nope") }
+      case Some(data) => db.run(heroes.filter(_.classRank === data._1).result.map(res => res.name.update("luke").updateStatement))
+                                .map(head => Ok(head.toString))
+    }
+  
   }
 }
