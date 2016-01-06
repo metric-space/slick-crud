@@ -63,7 +63,7 @@ class Application extends Controller {
 
     dataWrapped match {
       case None => scala.concurrent.Future { Ok("Nope") }
-      case Some(data) => db.run(heroes.filter(_.classRank === data._1).result.map(res => res.name.update("luke").updateStatement))
+      case Some(data) => db.run(heroes.filter(_.classRank === data._1).map(res => res.name).update(data._2))
                                 .map(head => Ok(head.toString))
     }
   
